@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leetball Updates</title>
+<link rel="icon" type="image/png" href="assets/icon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+
+<!-- Link preview for Discord / Steam / Twitter.
+     Once the site is online, replace YOUR-SITE-HERE with your real address,
+     e.g. https://yourname.github.io/leetball  (og:image must be a FULL link) -->
+<meta property="og:title" content="Leetball Updates">
+<meta property="og:description" content="Patch notes and update pages for Leetball.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://YOUR-SITE-HERE/assets/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#f7a233">
+
+<style>
+  :root {
+    --bg: #333333;        /* menu wall grey */
+    --bar: #232323;
+    --panel: #2b2b2b;
+    --text: #ececec;
+    --muted: #a8a8a8;
+    --orange: #f7a233;    /* ball / logo orange */
+    --blue: #0095fd;      /* player blue */
+    --line: #444444;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Trebuchet MS", system-ui, sans-serif;
+  }
+
+  /* Top bar */
+  header {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 8px 16px;
+    background: var(--bar);
+    border-bottom: 3px solid var(--orange);
+  }
+  header a.brand {
+    display: flex; align-items: center; gap: 10px;
+    text-decoration: none; min-width: 0;
+  }
+  header .icon { width: 38px; height: 38px; flex: none; }
+  header .wordmark { height: 34px; width: auto; display: block; }
+  header select {
+    max-width: 50vw;
+    background: var(--panel); color: var(--text);
+    border: 1px solid var(--line); border-radius: 4px;
+    padding: 6px 8px; font: inherit; font-size: 0.9rem;
+  }
+  header select:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
+
+  /* Big logo above each update (the Leetball logo unless an update sets its own) */
+  .update-logo {
+    display: flex; justify-content: center;
+    padding: 28px 16px 20px;
+  }
+  .update-logo img { width: 100%; max-width: 640px; height: auto; display: block; }
+
+  /* The update itself */
+  main {
+    max-width: 800px;           /* how wide the image column can get */
+    margin: 0 auto;
+  }
+  .update-images img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .missing {
+    margin: 24px 16px; padding: 20px;
+    border: 2px dashed var(--orange); border-radius: 6px;
+    color: var(--muted); text-align: center; line-height: 1.5;
+  }
+  .missing code { color: var(--text); }
+
+  /* Older updates list */
+  .older {
+    padding: 32px 16px 48px;
+    border-top: 1px solid var(--line);
+    margin-top: 32px;
+  }
+  .older h2 {
+    margin: 0 0 12px; font-size: 1rem; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .older ul { list-style: none; margin: 0; padding: 0; }
+  .older li { padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .older a { color: var(--orange); text-decoration: none; font-weight: bold; }
+  .older a:hover { text-decoration: underline; }
+  .older .date { color: var(--muted); font-size: 0.85rem; margin-left: 8px; }
+
+  footer {
+    text-align: center; padding: 24px 16px 40px;
+    color: var(--muted); font-size: 0.8rem;
+  }
+  footer img { width: 48px; height: 48px; opacity: 0.6; display: block; margin: 0 auto 8px; }
+
+  /* Back to top button */
+  #top-btn {
+    position: fixed; right: 16px; bottom: 16px;
+    background: var(--orange); color: #1b1b1b; border: none; border-radius: 4px;
+    padding: 10px 14px; font: inherit; font-weight: bold; cursor: pointer;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  #top-btn.show { opacity: 1; pointer-events: auto; }
+
+  @media (max-width: 480px) {
+    header .wordmark { height: 24px; }
+    header .icon { width: 30px; height: 30px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="brand" href="./">
+    <img class="icon" src="assets/icon.png" alt="">
+    <img class="wordmark" src="assets/logo.png" alt="Leetball">
+  </a>
+  <select id="picker" aria-label="Choose an update"></select>
+</header>
+
+<main>
+  <div class="update-logo" id="update-logo"><img src="assets/logo.png" alt="Leetball"></div>
+  <div class="update-images" id="images"></div>
+  <section class="older" id="older" hidden>
+    <h2>Other updates</h2>
+    <ul id="older-list"></ul>
+  </section>
+</main>
+
+<footer>
+  <img src="assets/icon.png" alt="">
+  Leetball
+</footer>
+
+<button id="top-btn" aria-label="Back to top">▲ Top</button>
+
+<script>
+/* =====================================================================
+   YOUR UPDATES GO HERE. Newest update at the TOP of the list.
+
+   id      – short name used in the link (no spaces), e.g. ...#launch
+   title   – shown in the dropdown and browser tab
+   date    – any text you like
+   images  – one long image, or several images that stack with no gaps
+   logo    – OPTIONAL. Swaps the big Leetball logo above the update
+             for a different one, e.g. "assets/logo-halloween.png".
+             Use logo: "none" to hide it (if your image has its own header).
+
+   To add a new update later: copy one block, paste it at the top,
+   change the details, and put the image(s) in a new folder.
+   ===================================================================== */
+const UPDATES = [
+  {
+    id: "launch",
+    title: "The Very Scary Leetball Halloween Special",
+    date: "November 2026",
+    images: ["updates/launch/update.jpg"]
+  },
+  // {
+  //   id: "halloween",
+  //   title: "The Leetboo! Update",
+  //   date: "31 October 2026",
+  //   logo: "assets/logo-halloween.png",
+  //   images: ["updates/halloween/part1.png", "updates/halloween/part2.png"]
+  // },
+];
+
+const GAME_NAME = "Leetball";
+const DEFAULT_LOGO = "assets/logo.png";
+/* ===================================================================== */
+
+const picker = document.getElementById("picker");
+const imagesEl = document.getElementById("images");
+const logoEl = document.getElementById("update-logo");
+const olderEl = document.getElementById("older");
+const olderList = document.getElementById("older-list");
+const topBtn = document.getElementById("top-btn");
+
+UPDATES.forEach(u => {
+  const opt = document.createElement("option");
+  opt.value = u.id;
+  opt.textContent = u.title + (u.date ? " (" + u.date + ")" : "");
+  picker.appendChild(opt);
+});
+if (UPDATES.length < 2) picker.hidden = true;
+
+function show(id) {
+  const update = UPDATES.find(u => u.id === id) || UPDATES[0];
+  if (!update) return;
+
+  document.title = update.title + " – " + GAME_NAME;
+  picker.value = update.id;
+
+  if (update.logo === "none") {
+    logoEl.hidden = true;
+  } else {
+    logoEl.querySelector("img").src = update.logo || DEFAULT_LOGO;
+    logoEl.hidden = false;
+  }
+
+  imagesEl.innerHTML = "";
+  update.images.forEach((src, i) => {
+    const img = document.createElement("img");
+    img.src = src;
+    img.alt = update.title + (update.images.length > 1 ? " (part " + (i + 1) + ")" : "");
+    if (i > 0) img.loading = "lazy";
+    img.onerror = () => {
+      const box = document.createElement("div");
+      box.className = "missing";
+      box.innerHTML = "Couldn't find <code></code><br>Check the file name and folder match exactly (capital letters count).";
+      box.querySelector("code").textContent = src;
+      img.replaceWith(box);
+    };
+    imagesEl.appendChild(img);
+  });
+
+  olderList.innerHTML = "";
+  UPDATES.filter(u => u.id !== update.id).forEach(u => {
+    const li = document.createElement("li");
+    const a = document.createElement("a");
+    a.href = "#" + u.id;
+    a.textContent = u.title;
+    li.appendChild(a);
+    if (u.date) {
+      const d = document.createElement("span");
+      d.className = "date";
+      d.textContent = u.date;
+      li.appendChild(d);
+    }
+    olderList.appendChild(li);
+  });
+  olderEl.hidden = UPDATES.length < 2;
+
+  window.scrollTo({ top: 0, behavior: "instant" });
+}
+
+picker.addEventListener("change", () => { location.hash = picker.value; });
+window.addEventListener("hashchange", () => show(location.hash.slice(1)));
+window.addEventListener("scroll", () => {
+  topBtn.classList.toggle("show", window.scrollY > 800);
+});
+topBtn.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+
+show(location.hash.slice(1));
+</script>
+</body>
+</html>
